@@ -1,8 +1,13 @@
 all:
 	mkdir -p bin/
-	ocamlfind ocamlopt -package batteries -linkpkg markov.ml -o bin/markov
-	rm {markov.cmi,markov.cmx,markov.o}
-
-everything:
-	mkdir -p bin/
-	ocamlfind ocamlopt -package batteries -linkpkg markov.ml -o bin/markov
+	ocamlfind ocamlopt -a\
+		-package core\
+		-package str\
+		-thread\
+		markov.mli markov.ml -o markov.cmxa
+	ocamlfind ocamlopt\
+		-package core\
+ 		-package str\
+	 	-thread\
+		-linkpkg\
+		markov.cmxa main.ml -o bin/main

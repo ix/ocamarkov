@@ -1,38 +1,47 @@
-type word_pair = bytes * bytes
-type state     = word_pair * bytes list
+open Core.Std
 
-module Markov : sig
-  val tokenize : string -> string list
-  val pick     : 'a list -> 'a
-  val parse    : string list -> state list 
-  val parse_string : string -> state list
-end = struct
-  open Batteries
+type word_pair = string * string
+type state     = word_pair * string list
 
-  let pick xs =
-    List.nth xs @@ Random.int @@ (List.length xs - 1)
+let (--) start length = List.range start length
 
-  let tokenize sentence =
-    match sentence with
-      | "" -> []
-      | _  -> 
-        List.map String.lowercase @@
-          Str.split (Str.regexp " +") sentence
+let pick xs =
+  match xs with
+    | [] -> None
+    | _ -> Random.self_init () ;
+           List.nth xs @@ Random.int @@ List.length xs
 
-  let parse xs =
-    let rec build ss xs =
-      match (List.length xs) < 3 with
-        | true -> List.rev ss
-        | _ ->
-          let t = (List.nth xs 0, List.nth xs 1) in
-            build ((t, [List.nth xs 2]) :: ss) (List.tl xs)
-    in build [] xs
+let tokenize sentence =
+  match sentence with
+    | "" -> []
+    | _  -> 
+      List.map ~f:String.lowercase @@
+        Str.split (Str.regexp " +") sentence
 
-  let parse_string str =
-    parse @@ tokenize str
-end
+let parse words =
+  let rec build ss words =
+    if List.length words < 3 then
+      List.rev ss
+    else
+      let t = (List.nth_exn words 0, List.nth_exn words 1) in
+        build ((t, [List.nth_exn words 2]) :: ss) (List.tl_exn words)
+  in build [] words
 
-(*
-let () =
-  Printf.printf "%s" @@ Batteries.dump @@ Markov.parse_string "The quick brown fox jumps over the brown fox who is slow jumps over the brown fox who is dead."
-*)
+let parse_string str =
+  parse @@ tokenize str
+
+let find wp sl =
+  let hits = Caml.List.find_all (fun (p, xs) -> ((=) wp p)) sl in
+    List.concat @@ List.map ~f:snd hits
+
+let ref_wp wp =
+  (ref @@ fst wp, ref @@ snd wp)
+
+let generate nwords str =
+  Some ""
+
+let rec generate' nwords sl words accum = 
+  if nwords > 0 then
+    let (w1, w2) as words = fst @@ pick sl in
+      generate' (nwords - 1) sl accum
+  else accum
